@@ -180,6 +180,19 @@ input{width:min(92%,480px);padding:13px 16px;border-radius:14px;border:1px solid
   margin-top:12px;font-size:18px;font-weight:900;color:#ddd4f4;line-height:1.4
 }
 
+
+.scale-solution-slot{
+  min-width:86px;min-height:54px;display:inline-flex;align-items:center;justify-content:center;
+  vertical-align:middle;margin-left:8px
+}
+.scale-solution-slot.empty{
+  border:2px dashed rgba(255,255,255,.12);border-radius:12px
+}
+.scale-base-input.correct{
+  border-color:rgba(134,239,162,.75);
+  box-shadow:0 0 14px rgba(134,239,162,.28)
+}
+
 </style>
 </head>
 <body>
@@ -505,55 +518,75 @@ function qScaling(data){
 }
 function renderScalingStage(data){
   const base=data.a*data.b,targetFactor=data.b*data.scale,ans=base*data.scale;
-  if(!scaleManipState||!scaleManipState.baseSolved){
-    return `<div class="spell-card">
-      <div class="big-equation">${data.a} × ${fmt(targetFactor)} = ?</div>
-      <div class="history-meta" style="font-size:18px;margin-top:14px;margin-bottom:8px"><strong>Strategy (optional):</strong> solve the basic fact first, then scale the product by ×${fmt(data.scale)}.</div>
-      <div class="scale-row" style="margin-top:8px">
-        <div class="scale-box">${data.a} × ${data.b} =
-          <input id="scaleBaseInput" class="scale-base-input" inputmode="numeric"
-            onkeydown="if(event.key==='Enter')checkScaleBaseFact()" aria-label="basic fact answer">
-          <button class="scale-base-check" onclick="checkScaleBaseFact()">Check</button>
-        </div>
-        <div class="scale-arrow">→ ×${fmt(data.scale)} →</div>
-        <div class="scale-box">${data.a} × ${fmt(targetFactor)} = ?</div>
-      </div>
-    </div>`;
-  }
+  const solved=!!(scaleManipState&&scaleManipState.baseSolved);
+  const inputValue=solved?fmt(base):'';
+  const chip=solved
+    ? `<div id="scaleChip" class="scale-chip ${scaleManipState.selected?'selected':''}" draggable="true"
+         ondragstart="scaleDragStart(event)" onclick="scaleChipTap()">${fmt(base)}</div>`
+    : '';
+
   return `<div class="spell-card">
     <div class="big-equation">${data.a} × ${fmt(targetFactor)} = ?</div>
-    <div class="history-meta" style="font-size:18px;margin-top:14px;margin-bottom:8px"><strong>Strategy (optional):</strong> ${data.a} × ${data.b} = ${fmt(base)}, then scale ${fmt(base)} by ×${fmt(data.scale)}.</div>
+    <div class="history-meta" style="font-size:18px;margin-top:14px;margin-bottom:8px">
+      <strong>Strategy (optional):</strong> solve ${data.a} × ${data.b}, then slide that product onto the <strong>1</strong> in ${fmt(data.scale)}.
+    </div>
+
     <div class="scale-row" style="margin-top:8px">
-      <div class="scale-box">${data.a} × ${data.b} = ${fmt(base)}</div>
+      <div class="scale-box">${data.a} × ${data.b} =
+        <input id="scaleBaseInput" class="scale-base-input ${solved?'correct':''}" inputmode="numeric"
+          value="${inputValue}" ${solved?'disabled':''}
+          oninput="autoCheckScaleBaseFact()" onblur="checkScaleBaseFact(false)"
+          onkeydown="if(event.key==='Enter')checkScaleBaseFact(true)"
+          aria-label="basic fact answer">
+        <span id="scaleSolutionSlot" class="scale-solution-slot ${solved?'':'empty'}">${chip}</span>
+      </div>
       <div class="scale-arrow">→ ×${fmt(data.scale)} →</div>
       <div class="scale-box">${data.a} × ${fmt(targetFactor)} = ?</div>
     </div>
-    <div class="history-meta">${fmt(targetFactor)} means ${data.b} ${data.scale===10?'tens':data.scale===100?'hundreds':'thousands'}.</div>
+
     ${renderScaleManipulator(base,data.scale,ans)}
   </div>`;
 }
-function checkScaleBaseFact(){
+function unlockScaleBaseFact(){
+  if(!current||current.kind!=='scaling'||!scaleManipState||scaleManipState.baseSolved)return;
+  scaleManipState.baseSolved=true;
+  document.getElementById('visual').innerHTML=renderScalingStage(current.data);
+  renderOptions(current.options);
+  setFeedback(`✓ Correct. Drag ${fmt(scaleManipState.base)} onto the 1 in ${fmt(scaleManipState.scale)}.`,true);
+}
+function autoCheckScaleBaseFact(){
   if(!current||current.kind!=='scaling'||!scaleManipState||scaleManipState.baseSolved)return;
   const input=document.getElementById('scaleBaseInput');
-  const raw=input?input.value.trim():'';
-  if(raw===''){setFeedback('Type the basic fact first.',false);return}
+  const raw=input?input.value.replace(/,/g,'').trim():'';
+  if(raw!=='' && Number(raw)===scaleManipState.base) unlockScaleBaseFact();
+}
+function checkScaleBaseFact(fromEnter=false){
+  if(!current||current.kind!=='scaling'||!scaleManipState||scaleManipState.baseSolved)return;
+  const input=document.getElementById('scaleBaseInput');
+  const raw=input?input.value.replace(/,/g,'').trim():'';
+  if(raw==='')return;
   if(Number(raw)===scaleManipState.base){
-    scaleManipState.baseSolved=true;
-    document.getElementById('visual').innerHTML=renderScalingStage(current.data);
-    renderOptions(current.options);
-    setFeedback(`✓ Correct. Now scale ${fmt(scaleManipState.base)} by ×${fmt(scaleManipState.scale)}.`,true);
-  }else{
+    unlockScaleBaseFact();
+  }else if(fromEnter || document.activeElement!==input){
     addProcessError(`Basic fact answered ${raw} instead of ${scaleManipState.base}`);
     setFeedback(`Not quite. Recheck ${current.data.a} × ${current.data.b}.`,false);
-    if(input){input.select();input.focus();}
   }
 }
 
 function renderScaleManipulator(base,scale,ans){
   const suffix=fmt(scale).slice(1);
-  return `<div class="scale-play"><div class="scale-play-title">Optional: drag (or tap) <strong>${fmt(base)}</strong> onto the <strong>1</strong> in ${fmt(scale)}. Watch what happens to the place value.</div>
-    <div class="scale-manip"><div id="scaleChip" class="scale-chip ${scaleManipState&&scaleManipState.selected?'selected':''}" draggable="true" ondragstart="scaleDragStart(event)" onclick="scaleChipTap()">${fmt(base)}</div>
-    <div class="scale-arrow">→</div><div id="scaleDrop" class="scale-zero-target ${scaleManipState&&scaleManipState.built?'scale-built':''}" ondragover="event.preventDefault()" ondrop="scaleDrop(event)" onclick="scaleTargetTap()">${scaleManipState&&scaleManipState.built?fmt(ans):`<span class="leading-one">1</span>${suffix}`}</div></div></div>`;
+  return `<div class="scale-play">
+    <div class="scale-play-title">${scaleManipState&&scaleManipState.baseSolved
+      ? `Drag (or tap) <strong>${fmt(base)}</strong> onto the <strong>1</strong> in ${fmt(scale)}.`
+      : `Solve the basic fact above. Its answer will appear beside the box so you can slide it onto the <strong>1</strong> in ${fmt(scale)}.`}
+    </div>
+    <div class="scale-manip">
+      <div id="scaleDrop" class="scale-zero-target ${scaleManipState&&scaleManipState.built?'scale-built':''}"
+        ondragover="event.preventDefault()" ondrop="scaleDrop(event)" onclick="scaleTargetTap()">
+        ${scaleManipState&&scaleManipState.built?fmt(ans):`<span class="leading-one">1</span>${suffix}`}
+      </div>
+    </div>
+  </div>`;
 }
 function scaleDragStart(e){if(!scaleManipState)return;e.dataTransfer.setData('text/plain',String(scaleManipState.base));}
 function scaleChipTap(){if(!scaleManipState||scaleManipState.built)return;scaleManipState.selected=!scaleManipState.selected;const c=document.getElementById('scaleChip');if(c)c.classList.toggle('selected',scaleManipState.selected)}
