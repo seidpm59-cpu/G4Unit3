@@ -193,6 +193,22 @@ input{width:min(92%,480px);padding:13px 16px;border-radius:14px;border:1px solid
   box-shadow:0 0 14px rgba(134,239,162,.28)
 }
 
+
+.scale-inline-drop{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:62px;padding:4px 8px;margin:0 3px;border-radius:12px;
+  border:2px dashed rgba(245,215,110,.58);
+  background:rgba(245,215,110,.07);
+  color:#f5d76e;font-weight:900;line-height:1
+}
+.scale-inline-drop.scale-built{
+  border-style:solid;background:rgba(134,239,162,.14);
+  border-color:rgba(134,239,162,.58);color:#d8ffe1
+}
+.scale-drag-note{
+  margin-top:8px;font-size:17px;font-weight:800;color:#d7cfea
+}
+
 </style>
 </head>
 <body>
@@ -276,6 +292,19 @@ let round=0,score=0,streak=0,current=null,locked=false;
 let historyLog=[],sessionRecords=[],incorrectQueue=[],correctionQueue=[];
 let retryMode=null,retryQueue=[],retryIndex=0;
 let factorState=null,breakState=null,strategyState=null,matchState=null,scaleManipState=null;
+let recentQuestionKeys=JSON.parse(localStorage.getItem('unit3RecentQuestionKeys')||'{}');
+
+function chooseFresh(bucket,items,keyFn=x=>String(x),remember=6){
+  if(!items.length)return null;
+  const recent=recentQuestionKeys[bucket]||[];
+  let pool=items.filter(x=>!recent.includes(keyFn(x)));
+  if(!pool.length)pool=items.slice();
+  const picked=choose(pool);
+  const key=keyFn(picked);
+  recentQuestionKeys[bucket]=[key,...recent.filter(k=>k!==key)].slice(0,remember);
+  localStorage.setItem('unit3RecentQuestionKeys',JSON.stringify(recentQuestionKeys));
+  return picked;
+}
 
 function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 function choose(arr){return arr[randInt(0,arr.length-1)]}
@@ -404,8 +433,10 @@ function submitFinalAnswer(){
 /* 1. Fact family */
 function qFactFamily(data){
   data=data||(()=>{
-    const facts=[[6,7],[8,7],[9,6],[4,8],[5,8],[9,8],[7,4],[6,6]];
-    const [a,b]=choose(facts),p=a*b,askBy=Math.random()<.5?a:b;
+    const facts=[];
+    for(let a=2;a<=9;a++)for(let b=a;b<=9;b++)facts.push([a,b]);
+    const [a,b]=chooseFresh('factFamily',facts,x=>x.join('x'),10);
+    const p=a*b,askBy=Math.random()<.5?a:b;
     return{a,b,p,askBy};
   })();
   const ans=data.p/data.askBy;
@@ -433,7 +464,12 @@ function factorPairsOf(n){
   const out=[];for(let i=1;i<=Math.sqrt(n);i++)if(n%i===0)out.push([i,n/i]);return out;
 }
 function qFactorPairs(data){
-  data=data||{target:choose([28,42,48,55,63])};
+  data=data||{target:chooseFresh(
+    'factorPairs',
+    [18,20,24,28,30,32,35,40,42,45,48,50,54,55,56,60,63,66,70,72,75,77,78,80,84,88,90,96,98,99],
+    x=>String(x),
+    12
+  )};
   const pairs=factorPairsOf(data.target);
   const factors=[...new Set(pairs.flat())];
   let extras=[];while(extras.length<4){const x=randInt(2,18);if(!factors.includes(x)&&!extras.includes(x))extras.push(x)}
@@ -497,8 +533,12 @@ function tapFactor(evt,v){
 /* 3. Scaling */
 function qScaling(data){
   data=data||(()=>{
-    const a=choose([3,4,6,7,8,9]),b=choose([2,3,4,5,6,7]),scale=choose([10,100,1000]);
-    return{a,b,scale};
+    const possibilities=[];
+    for(const a of [2,3,4,5,6,7,8,9])
+      for(const b of [2,3,4,5,6,7,8,9])
+        for(const scale of [10,100,1000])
+          possibilities.push({a,b,scale});
+    return chooseFresh('scaling',possibilities,x=>`${x.a}x${x.b*x.scale}`,12);
   })();
   const base=data.a*data.b,targetFactor=data.b*data.scale,ans=base*data.scale;
   const options=shuffle([ans,base*10,base*100,base*1000].filter((x,i,a)=>a.indexOf(x)===i)).map(fmt);
@@ -525,6 +565,13 @@ function renderScalingStage(data){
          ondragstart="scaleDragStart(event)" onclick="scaleChipTap()">${fmt(base)}</div>`
     : '';
 
+  const topScaleTarget=solved
+    ? `<span id="scaleDrop" class="scale-inline-drop ${scaleManipState.built?'scale-built':''}"
+         ondragover="event.preventDefault()" ondrop="scaleDrop(event)" onclick="scaleTargetTap()">
+         ${scaleManipState.built?fmt(ans):`<span class="leading-one">1</span>${fmt(data.scale).slice(1)}`}
+       </span>`
+    : fmt(data.scale);
+
   return `<div class="spell-card">
     <div class="big-equation">${data.a} × ${fmt(targetFactor)} = ?</div>
     <div class="history-meta" style="font-size:18px;margin-top:14px;margin-bottom:8px">
@@ -540,11 +587,13 @@ function renderScalingStage(data){
           aria-label="basic fact answer">
         <span id="scaleSolutionSlot" class="scale-solution-slot ${solved?'':'empty'}">${chip}</span>
       </div>
-      <div class="scale-arrow">→ ×${fmt(data.scale)} →</div>
+      <div class="scale-arrow">→ ×${topScaleTarget} →</div>
       <div class="scale-box">${data.a} × ${fmt(targetFactor)} = ?</div>
     </div>
 
-    ${renderScaleManipulator(base,data.scale,ans)}
+    ${solved&&!scaleManipState.built
+      ? `<div class="scale-drag-note">Drag (or tap) <strong>${fmt(base)}</strong> onto the <strong>1</strong> in the ${fmt(data.scale)} above.</div>`
+      : ''}
   </div>`;
 }
 function unlockScaleBaseFact(){
@@ -573,21 +622,7 @@ function checkScaleBaseFact(fromEnter=false){
   }
 }
 
-function renderScaleManipulator(base,scale,ans){
-  const suffix=fmt(scale).slice(1);
-  return `<div class="scale-play">
-    <div class="scale-play-title">${scaleManipState&&scaleManipState.baseSolved
-      ? `Drag (or tap) <strong>${fmt(base)}</strong> onto the <strong>1</strong> in ${fmt(scale)}.`
-      : `Solve the basic fact above. Its answer will appear beside the box so you can slide it onto the <strong>1</strong> in ${fmt(scale)}.`}
-    </div>
-    <div class="scale-manip">
-      <div id="scaleDrop" class="scale-zero-target ${scaleManipState&&scaleManipState.built?'scale-built':''}"
-        ondragover="event.preventDefault()" ondrop="scaleDrop(event)" onclick="scaleTargetTap()">
-        ${scaleManipState&&scaleManipState.built?fmt(ans):`<span class="leading-one">1</span>${suffix}`}
-      </div>
-    </div>
-  </div>`;
-}
+function renderScaleManipulator(base,scale,ans){return '';}
 function scaleDragStart(e){if(!scaleManipState)return;e.dataTransfer.setData('text/plain',String(scaleManipState.base));}
 function scaleChipTap(){if(!scaleManipState||scaleManipState.built)return;scaleManipState.selected=!scaleManipState.selected;const c=document.getElementById('scaleChip');if(c)c.classList.toggle('selected',scaleManipState.selected)}
 function scaleTargetTap(){if(scaleManipState&&scaleManipState.selected&&!scaleManipState.built)finishScaleBuild()}
@@ -606,9 +641,11 @@ function handleScalingOption(o){
 
 /* 4. Break apart multiplication */
 function makeBreakData(){
-  const multiplier=choose([2,3,4,5]);
-  const n=choose([28,34,46,63,72,243,312,421]);
-  return{multiplier,n};
+  const possibilities=[];
+  const nums=[23,24,27,32,34,36,41,43,46,52,54,61,63,67,72,74,81,84,92,
+              123,132,214,231,243,312,321,402,413,421,504,612];
+  for(const n of nums)for(const multiplier of [2,3,4,5])possibilities.push({n,multiplier});
+  return chooseFresh('breakApart',possibilities,x=>`${x.n}x${x.multiplier}`,12);
 }
 function decompose(n){
   const s=String(n),parts=[];for(let i=0;i<s.length;i++){const d=Number(s[i]),place=10**(s.length-1-i);if(d)parts.push(d*place)}return parts;
@@ -667,12 +704,20 @@ function answerPartial(v){
 
 /* 5. Estimation strategy only */
 function qStrategy(data){
-  data=data||choose([
+  data=data||chooseFresh('estimate',[
     {a:29,b:81,roundA:30,roundB:80},
     {a:28,b:25,roundA:30,roundB:30},
     {a:39,b:48,roundA:40,roundB:50},
-    {a:61,b:42,roundA:60,roundB:40}
-  ]);
+    {a:61,b:42,roundA:60,roundB:40},
+    {a:72,b:31,roundA:70,roundB:30},
+    {a:46,b:58,roundA:50,roundB:60},
+    {a:34,b:67,roundA:30,roundB:70},
+    {a:83,b:22,roundA:80,roundB:20},
+    {a:57,b:41,roundA:60,roundB:40},
+    {a:68,b:53,roundA:70,roundB:50},
+    {a:44,b:79,roundA:40,roundB:80},
+    {a:26,b:62,roundA:30,roundB:60}
+  ],x=>`${x.a}x${x.b}`,8);
   const estimate=data.roundA*data.roundB;
   return{
     key:'strategy',data,kind:'strategyEstimate',skillLabel:'Estimation Vault',
@@ -713,14 +758,39 @@ function chooseEstimateOnly(o){
 
 /* 6. Final match */
 function qFinalMatch(data){
-  data=data||{
-    pairs:[
+  if(!data){
+    const scaleItems=[
       {prompt:'60 × 40',answer:'2,400'},
+      {prompt:'30 × 70',answer:'2,100'},
+      {prompt:'80 × 50',answer:'4,000'},
+      {prompt:'40 × 90',answer:'3,600'},
+      {prompt:'20 × 60',answer:'1,200'},
+      {prompt:'70 × 30',answer:'2,100'}
+    ];
+    const estimateItems=[
       {prompt:'Estimate 29 × 81',answer:'30 × 80'},
-      {prompt:'24 × 3',answer:'72'}
-    ],
-    distractor:'82'
-  };
+      {prompt:'Estimate 41 × 68',answer:'40 × 70'},
+      {prompt:'Estimate 72 × 31',answer:'70 × 30'},
+      {prompt:'Estimate 58 × 44',answer:'60 × 40'},
+      {prompt:'Estimate 83 × 22',answer:'80 × 20'},
+      {prompt:'Estimate 67 × 53',answer:'70 × 50'}
+    ];
+    const breakItems=[
+      {prompt:'24 × 3',answer:'72'},
+      {prompt:'32 × 2',answer:'64'},
+      {prompt:'41 × 2',answer:'82'},
+      {prompt:'23 × 4',answer:'92'},
+      {prompt:'34 × 2',answer:'68'},
+      {prompt:'27 × 3',answer:'81'}
+    ];
+    const s=chooseFresh('finalScale',scaleItems,x=>x.prompt,4);
+    const e=chooseFresh('finalEstimate',estimateItems,x=>x.prompt,4);
+    const b=chooseFresh('finalBreak',breakItems,x=>x.prompt,4);
+    const usedAnswers=[s.answer,e.answer,b.answer];
+    const distractors=['600','900','1,800','2,800','96','76','84','120','3,000'];
+    let distractor=choose(distractors.filter(x=>!usedAnswers.includes(x)));
+    data={pairs:[s,e,b],distractor};
+  }
   const rightChoices=shuffle([...data.pairs.map(p=>p.answer),data.distractor]);
   matchState={
     pairs:JSON.parse(JSON.stringify(data.pairs)),
@@ -737,9 +807,9 @@ function qFinalMatch(data){
   };
   q.visual=renderFinalMatch();
   q.hint=hintSteps([
-    `Use place-value scaling for 60 × 40.`,
-    `For Estimate 29 × 81, round each factor to a nearby ten.`,
-    `For 24 × 3, break 24 into 20 + 4: 20 × 3 + 4 × 3 = 60 + 12.`
+    `For the tens × tens scroll, multiply the basic digits and use the tens place values.`,
+    `For the estimate scroll, round each factor to a nearby ten.`,
+    `For the 2-digit × 1-digit scroll, break the 2-digit number into tens and ones if you need a mental strategy.`
   ]);
   return q;
 }
