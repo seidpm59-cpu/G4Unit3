@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hogwarts Multiplication Quest: Gringotts Product Vault</title>
+<style>
+:root{
+  --ink:#f8f2d5;--muted:#d0c8ec;--gold:#f5d76e;--deep:#0e1023;
+  --panel:rgba(15,13,38,.82);--blue:#67c8ff;--green:#86efa2;--red:#ff9292;--violet:#806ee8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);text-align:center;overflow-x:hidden;
+  background:radial-gradient(circle at 15% 8%,rgba(245,215,110,.16),transparent 27%),
+             radial-gradient(circle at 88% 15%,rgba(103,200,255,.13),transparent 23%),
+             linear-gradient(145deg,#0a1022,#211a38 52%,#0c0a18)
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.25;
+  background-image:radial-gradient(circle,rgba(255,255,255,.5) 0 1px,transparent 1.6px),
+                   radial-gradient(circle,rgba(245,215,110,.4) 0 1px,transparent 1.5px);
+  background-size:77px 77px,121px 121px;animation:stars 22s linear infinite
+}
+@keyframes stars{to{background-position:154px -154px,-121px 121px}}
+.screen{max-width:1080px;margin:auto;padding:22px 16px 36px;position:relative;z-index:1}.hidden{display:none!important}
+.hero,.arena,.final-card{background:linear-gradient(180deg,rgba(33,27,64,.9),rgba(10,9,26,.9));border:1px solid rgba(245,215,110,.3);box-shadow:0 24px 70px rgba(0,0,0,.4);border-radius:24px}
+.hero{padding:25px 20px;margin:12px auto 18px;max-width:970px}.arena{padding:18px;position:relative;overflow:hidden}.final-card{max-width:900px;margin:18px auto;padding:23px}
+h1{font-size:clamp(34px,6vw,58px);line-height:.98;margin:7px 0 9px;text-shadow:0 0 18px rgba(245,215,110,.42)}
+h2{font-size:clamp(27px,4vw,42px);margin:8px 0;color:var(--gold)}
+.tagline{font-size:20px;color:#f0e5a7;max-width:790px;margin:7px auto}.mission{color:var(--muted);max-width:850px;margin:8px auto;line-height:1.5}
+button{border:0;border-radius:14px;padding:12px 17px;margin:6px;color:#fff;font-size:16px;font-weight:850;cursor:pointer;background:linear-gradient(135deg,#5b4aa5,#806ee8);box-shadow:0 8px 18px rgba(0,0,0,.27);transition:.12s}
+button:hover{transform:translateY(-1px);filter:brightness(1.07)}button:active{transform:translateY(1px)}button:disabled{opacity:.45;cursor:default;transform:none}
+.start-btn{font-size:19px;padding:14px 24px;background:linear-gradient(135deg,#a87508,#ffd455,#946108);color:#241400}
+.ghost-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);box-shadow:none}
+.mini-grid{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px;max-width:920px;margin:18px auto}
+.feature{padding:14px;border-radius:17px;background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.12);line-height:1.35}
+.feature strong{display:block;color:var(--gold);margin-bottom:5px}
+.hud{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px;margin:10px auto 12px}
+.hud-card{padding:10px;border-radius:16px;background:var(--panel);border:1px solid rgba(255,255,255,.13)}
+.hud-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.hud-value{font-size:22px;font-weight:950;color:var(--gold);margin-top:2px}
+.stair-map{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;max-width:900px;margin:10px auto 14px}
+.step{min-height:58px;border-radius:13px;background:linear-gradient(145deg,#343248,#211f35);border:1px solid rgba(210,190,135,.24);display:flex;align-items:center;justify-content:center;font-size:23px;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.025),inset 0 -8px 16px rgba(0,0,0,.18)}
+.step:before{content:'GR';position:absolute;top:4px;left:7px;font-size:7px;letter-spacing:.12em;color:rgba(245,215,110,.32);font-weight:950}
+.step:after{content:attr(data-room);position:absolute;bottom:3px;font-size:8px;color:rgba(255,255,255,.55);text-transform:uppercase}
+.step.current{border-color:rgba(245,215,110,.7);box-shadow:0 0 18px rgba(245,215,110,.18),inset 0 0 0 2px rgba(245,215,110,.06)}
+.step.open{background:linear-gradient(145deg,#a77918,#f5d76e 52%,#8c6110);color:#1d1224;box-shadow:0 0 20px rgba(245,215,110,.38);animation:vaultUnlock .5s ease}
+@keyframes vaultUnlock{0%{transform:rotateY(0) scale(.96)}55%{transform:rotateY(12deg) scale(1.05)}100%{transform:none}}
+.challenge-chip{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(245,215,110,.12);border:1px solid rgba(245,215,110,.27);color:#fff0a6;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+.question{font-size:clamp(22px,3vw,33px);font-weight:850;line-height:1.28;max-width:930px;margin:15px auto 12px}
+.visual{min-height:155px;display:block;margin:10px auto 12px}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:900px;margin:13px auto 3px}
+.option-btn{min-height:58px;background:rgba(255,255,255,.085);border:1px solid rgba(255,255,255,.15);font-size:clamp(16px,2vw,20px)}
+.submit-row{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+input{width:min(92%,480px);padding:13px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.2);font-size:20px;text-align:center;background:#fff;color:#14142a;outline:none}
+.feedback{min-height:46px;margin:13px auto 0;font-size:19px;font-weight:900;line-height:1.4}.good{color:#9dffad}.bad{color:#ffb0b0}
+.hint-card,.history-card{max-width:960px;margin:16px auto 0;padding:12px 14px;border-radius:16px;background:rgba(10,8,28,.64);border:1px solid rgba(245,215,110,.2);text-align:left}
+.hint-header,.history-header{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.hint-title,.history-title{font-size:14px;color:#f7d774;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+.hint-body,.history-body{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);color:#e8dfff;line-height:1.5}
+.hint-body.active,.history-body.active{display:block}.hint-step{margin:8px 0}
+.history-line{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;line-height:1.45}
+.history-meta{font-size:12px;color:rgba(255,255,255,.7);margin-top:3px}
+.fact-card,.spell-card,.strategy-card,.break-card,.factor-card,.match-shell{
+  max-width:900px;margin:0 auto;padding:16px;border-radius:18px;background:rgba(0,0,0,.23);border:1px solid rgba(255,255,255,.13)
+}
+.big-equation{font:900 clamp(28px,5vw,46px) ui-monospace,SFMono-Regular,Menlo,monospace;color:#fff0a6;margin:8px}
+.fact-family{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-width:760px;margin:12px auto}
+.fact-pill{padding:11px;border-radius:13px;background:rgba(103,200,255,.10);border:1px solid rgba(103,200,255,.24);font-weight:900;font-size:18px}
+.factor-stones{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px auto}
+.factor-stone{width:66px;height:66px;border-radius:50%;padding:0;font-size:20px;background:radial-gradient(circle at 35% 30%,#8578ca,#403473)}
+.factor-stone.selected{outline:4px solid var(--gold);transform:scale(1.06)}
+.factor-stone.used{opacity:.3;text-decoration:line-through;pointer-events:none}
+.pair-rack{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:10px}
+.pair-chip{padding:9px 13px;border-radius:12px;background:rgba(134,239,162,.12);border:1px solid rgba(134,239,162,.35);font-weight:900}
+.scale-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:12px auto}
+.scale-box{padding:14px 18px;border-radius:15px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);font-size:24px;font-weight:900}
+.scale-arrow{font-size:28px;color:var(--gold)}
+.crystal{display:inline-block;padding:14px 22px;border-radius:18px;background:linear-gradient(135deg,rgba(103,200,255,.25),rgba(128,110,232,.18));border:2px solid rgba(103,200,255,.42);font-size:30px;font-weight:950;cursor:pointer}
+.shards{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px auto}
+.shard{min-width:94px;padding:11px;border-radius:13px;background:linear-gradient(145deg,rgba(103,200,255,.17),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.15);font-weight:900;font-size:19px}
+.shard.fall{animation:glassFall .55s cubic-bezier(.2,.8,.25,1) both}
+@keyframes glassFall{0%{opacity:0;transform:translateY(-28px) rotate(-7deg) scale(.8)}70%{opacity:1;transform:translateY(5px) rotate(2deg) scale(1.03)}100%{transform:none}}
+.partial-row{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center;max-width:650px;margin:8px auto}
+.partial-label{font-weight:900;color:#f5e8b4;text-align:right}.partial-choices{display:flex;gap:6px;flex-wrap:wrap}
+.partial-choices button{margin:2px;padding:8px 11px}
+.area-wrap{max-width:720px;margin:12px auto}
+.area-model{display:grid;grid-template-columns:4fr 1fr;grid-template-rows:1fr;height:190px;border:3px solid rgba(255,255,255,.6)}
+.area-cell{border:1px solid rgba(255,255,255,.32);display:flex;align-items:center;justify-content:center;font-weight:950;font-size:22px;background:rgba(103,200,255,.08);cursor:pointer}
+.area-cell.done{background:rgba(134,239,162,.14);color:#c8ffd7}
+.area-labels{display:flex;justify-content:space-around;color:#f6de83;font-weight:900;margin:4px 0 7px}
+.match-board{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+.match-column{display:flex;flex-direction:column;gap:8px}
+.match-card{width:100%;min-height:66px;text-align:left;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);box-shadow:none}
+.match-card.right{text-align:center}
+.match-card.selected{outline:3px solid var(--gold);background:rgba(245,215,110,.13)}
+.match-card.matched{opacity:.42;text-decoration:line-through;pointer-events:none}
+.match-attempt{display:block;margin-top:5px;font-size:12px;color:#f5d76e;font-weight:900}
+.match-status{margin-top:12px;padding:10px;border-radius:12px;background:rgba(103,200,255,.08);font-weight:850}
+.end-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.report-card{max-width:920px;margin:12px auto;text-align:left;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px}
+.report-card strong{color:#f5d76e}
+@media(max-width:760px){.mini-grid{grid-template-columns:1fr 1fr}.hud{grid-template-columns:1fr 1fr}.stair-map{grid-template-columns:repeat(3,1fr)}.options{grid-template-columns:1fr}.match-board{grid-template-columns:1fr}.partial-row{grid-template-columns:1fr}.partial-label{text-align:center}}
+@media(prefers-reduced-motion:reduce){body:before,.shard.fall{animation:none}}
+
+/* Quaffle factor chamber: tactile tap feedback adapted from the Quidditch game */
+.factor-card{position:relative;overflow:visible}
+.factor-stone{position:relative;width:70px;height:70px;border-radius:50%;padding:0;font-size:20px;
+  background:radial-gradient(circle at 30% 27%,#f4aa62 0 12%,#bc5a2b 36%,#7b3219 74%,#4a1b10 100%);
+  border:2px solid rgba(255,213,157,.34);box-shadow:inset -6px -8px 12px rgba(0,0,0,.28),0 6px 13px rgba(0,0,0,.36),0 0 12px rgba(245,200,66,.12)}
+
+.factor-stone.selected{outline:4px solid var(--gold);transform:scale(1.08);box-shadow:0 0 22px rgba(245,215,110,.48),inset -6px -8px 12px rgba(0,0,0,.26)}
+.factor-stone.quaffle-hit{animation:quaffleHit .34s ease-out}
+@keyframes quaffleHit{0%{transform:scale(1)}42%{transform:scale(1.17) rotate(-5deg)}100%{transform:scale(1)}}
+.quaffle-ripple{position:fixed;width:28px;height:28px;border-radius:50%;transform:translate(-50%,-50%) scale(.2);border:2px solid rgba(245,200,66,.92);background:radial-gradient(circle,rgba(245,200,66,.30),rgba(103,200,255,.10) 48%,transparent 72%);box-shadow:0 0 20px rgba(245,200,66,.58);pointer-events:none;z-index:9999;animation:quaffleRipple .65s ease-out forwards}
+.quaffle-ripple.goal{border-color:rgba(134,239,162,.95);box-shadow:0 0 28px rgba(134,239,162,.62),0 0 40px rgba(245,200,66,.36);animation:quaffleGoalRipple .78s ease-out forwards}
+.quaffle-spark{position:fixed;transform:translate(-50%,-50%);pointer-events:none;z-index:10000;color:rgba(245,215,110,.98);text-shadow:0 0 10px rgba(245,215,110,.8);animation:quaffleSpark .72s ease-out forwards}
+@keyframes quaffleRipple{to{opacity:0;transform:translate(-50%,-50%) scale(6)}}
+@keyframes quaffleGoalRipple{0%{opacity:1;transform:translate(-50%,-50%) scale(.2)}70%{opacity:.75;transform:translate(-50%,-50%) scale(6)}100%{opacity:0;transform:translate(-50%,-50%) scale(8)}}
+@keyframes quaffleSpark{0%{opacity:1;transform:translate(-50%,-50%) scale(.7)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.25) rotate(90deg)}}
+
+
+.scale-play{max-width:720px;margin:16px auto 3px;padding:12px;border-radius:16px;background:rgba(255,255,255,.035);border:1px dashed rgba(245,215,110,.32)}
+.scale-play-title{font-size:13px;color:#d8d0ee;margin-bottom:10px}
+.scale-manip{display:flex;justify-content:center;align-items:center;gap:13px;flex-wrap:wrap}
+.scale-chip{padding:10px 15px;border-radius:12px;background:linear-gradient(135deg,#6c5bd3,#9b87ff);font-size:24px;font-weight:950;cursor:grab;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+.scale-chip.selected{outline:4px solid var(--gold);box-shadow:0 0 20px rgba(245,215,110,.42)}
+.scale-zero-target{min-width:120px;padding:10px 15px;border-radius:12px;border:2px dashed rgba(245,215,110,.55);background:rgba(245,215,110,.06);font-size:24px;font-weight:950}
+.scale-zero-target .leading-one{display:inline-block;padding:1px 5px;border-radius:7px;background:rgba(245,215,110,.15);color:#ffe98c}
+.scale-built{color:#9dffad;border-style:solid}
+
+
+/* Final-match tactile feedback */
+.match-card.right{position:relative;overflow:visible}
+.match-card.right.match-pop{animation:matchPop .36s ease-out}
+.match-card.right.match-shock{animation:matchShock .42s ease-in-out}
+@keyframes matchPop{
+  0%{transform:scale(1)}
+  45%{transform:scale(1.16);box-shadow:0 0 26px 8px rgba(134,239,162,.45),0 0 42px rgba(245,215,110,.35)}
+  100%{transform:scale(1)}
+}
+@keyframes matchShock{
+  0%,100%{transform:translateX(0);filter:brightness(1)}
+  18%{transform:translateX(-7px) rotate(-1deg);filter:brightness(1.7)}
+  35%{transform:translateX(7px) rotate(1deg);filter:brightness(.85)}
+  52%{transform:translateX(-5px);filter:brightness(1.55)}
+  70%{transform:translateX(4px);filter:brightness(.9)}
+  86%{transform:translateX(-2px)}
+}
+.match-star,.match-bolt{
+  position:fixed;pointer-events:none;z-index:10020;
+  transform:translate(-50%,-50%);
+  font-size:20px;line-height:1;
+  text-shadow:0 0 12px currentColor;
+}
+.match-star{color:#ffe56f;animation:matchStarFly .72s ease-out forwards}
+.match-bolt{color:#8fe8ff;animation:matchBoltFly .42s ease-out forwards}
+@keyframes matchStarFly{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(.55) rotate(0deg)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.35) rotate(120deg)}
+}
+@keyframes matchBoltFly{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(.8)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.2)}
+}
+
+
+/* Q1: keep the supporting fact at the same size as the question */
+.fact-card .big-equation{font-size:clamp(22px,3vw,33px)}
+
+/* Q3/Q4 readability */
+.scale-base-input{
+  width:112px;max-width:34vw;padding:9px 10px;border-radius:12px;
+  font-size:24px;font-weight:900;text-align:center;background:#fff;color:#15152b;
+  border:2px solid rgba(245,215,110,.48)
+}
+.scale-base-check{padding:10px 14px}
+.partial-products-summary{
+  margin-top:12px;font-size:18px;font-weight:900;color:#ddd4f4;line-height:1.4
+}
+
+</style>
+</head>
+<body>
+
+<div class="screen" id="startScreen">
+  <div class="hero">
+    <h1>🏰 Hogwarts Multiplication Quest</h1>
+    <h2>Gringotts Product Vault</h2>
+    <p class="tagline">Six enchanted Gringotts locks guard the Product Vault. Crack each lock by revealing a different structure in multiplication and division.</p>
+    <p class="mission">Practice fact families, factor pairs, place-value scaling, break-apart multiplication, and estimation, then finish with the Room of Requirement matching challenge.</p>
+    <div class="mini-grid">
+      <div class="feature"><strong>⚡ Fact Families</strong>Use multiplication facts to unlock related division facts.</div>
+      <div class="feature"><strong>🪨 Factor Chamber</strong>Build factor pairs and recognize composite structure.</div>
+      <div class="feature"><strong>🔭 Enlargement Spell</strong>Scale known facts by tens, hundreds, and thousands.</div>
+      <div class="feature"><strong>💎 Break-Apart Multiplication</strong>Split numbers by place value and combine partial products.</div>
+      <div class="feature"><strong>📐 Estimation Vault</strong>Round both factors to friendly tens and predict the product.</div>
+      <div class="feature"><strong>🗝️ Final Match</strong>Match equivalent ideas — with an attempt count for every scroll.</div>
+    </div>
+    <button class="start-btn" onclick="startGame()">Enter the Product Vault</button>
+    <button class="ghost-btn" onclick="toggleHistory('home')">📖 Open Quest Ledger</button>
+  </div>
+  <div class="history-card">
+    <div class="history-header" onclick="toggleHistory('home')"><div class="history-title">📖 Quest Ledger</div><div>▼</div></div>
+    <div class="history-body" id="homeHistory"><div id="homeHistoryLines" class="history-meta">No quests yet.</div></div>
+  </div>
+</div>
+
+<div class="screen hidden" id="gameScreen">
+  <div class="hud">
+    <div class="hud-card"><div class="hud-label">Gringotts Lock</div><div class="hud-value"><span id="roundNum">1</span>/6</div></div>
+    <div class="hud-card"><div class="hud-label">House Points</div><div class="hud-value" id="scoreBox">0</div></div>
+    <div class="hud-card"><div class="hud-label">Streak</div><div class="hud-value" id="streakBox">0</div></div>
+    <div class="hud-card"><div class="hud-label">Corrections</div><div class="hud-value" id="correctionBox">0</div></div>
+  </div>
+  <div class="stair-map" id="stairMap"></div>
+  <div class="arena">
+    <div class="challenge-chip" id="skillChip">Skill</div>
+    <div class="question" id="questionText">Question</div>
+    <div class="visual" id="visual"></div>
+    <div class="options" id="options"></div>
+    <div class="submit-row" id="submitRow">
+      <input id="answerInput" inputmode="numeric" placeholder="Type your final answer" onkeydown="if(event.key==='Enter')submitFinalAnswer()">
+      <button id="submitAnswerBtn" onclick="submitFinalAnswer()">Submit Answer</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div class="hint-card">
+    <div class="hint-header" onclick="toggleHint()"><div class="hint-title">✨ Strategy Charm</div><div>▼</div></div>
+    <div class="hint-body" id="hintBody"></div>
+  </div>
+  <div class="history-card">
+    <div class="history-header" onclick="toggleHistory('game')"><div class="history-title">📖 Quest Ledger</div><div>▼</div></div>
+    <div class="history-body" id="gameHistory"><div id="historyLines" class="history-meta">No quests yet.</div></div>
+  </div>
+</div>
+
+<div class="screen hidden" id="endScreen">
+  <div class="final-card">
+    <h1>✨ Product Vault Opened!</h1>
+    <p class="tagline" id="endSummary"></p>
+    <p class="mission" id="endMessage"></p>
+    <div class="end-actions">
+      <button class="start-btn" id="retryIncorrectBtn" onclick="startRetry('incorrect')" style="display:none"></button>
+      <button class="ghost-btn" id="practiceCorrectionsBtn" onclick="startRetry('corrections')" style="display:none"></button>
+      <button class="start-btn" onclick="startGame()">Play Again</button>
+    </div>
+  </div>
+  <div id="endReport"></div>
+  <div class="history-card">
+    <div class="history-header" onclick="toggleHistory('end')"><div class="history-title">📖 Quest Ledger</div><div>▼</div></div>
+    <div class="history-body active" id="endHistory"><div id="endHistoryLines"></div></div>
+  </div>
+</div>
+
+<script>
+const totalRounds=6;
+const skillOrder=['factFamily','factorPairs','scaling','breakApart','strategy','finalMatch'];
+const roomNames=['Fact Vault','Quaffle Vault','Scaling Vault','Break-Apart Vault','Estimate Vault','Requirement Vault'];
+let round=0,score=0,streak=0,current=null,locked=false;
+let historyLog=[],sessionRecords=[],incorrectQueue=[],correctionQueue=[];
+let retryMode=null,retryQueue=[],retryIndex=0;
+let factorState=null,breakState=null,strategyState=null,matchState=null,scaleManipState=null;
+
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function choose(arr){return arr[randInt(0,arr.length-1)]}
+function shuffle(arr){return arr.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
+function fmt(n){return Number(n).toLocaleString('en-US')}
+function norm(s){return String(s??'').replace(/,/g,'').replace(/\s+/g,'').trim()}
+function hintSteps(arr){return arr.map(x=>`<div class="hint-step">• ${x}</div>`).join('')}
+
+function toggleHint(){document.getElementById('hintBody').classList.toggle('active')}
+function toggleHistory(where){
+  const id=where==='home'?'homeHistory':where==='end'?'endHistory':'gameHistory';
+  document.getElementById(id).classList.toggle('active');
+}
+function setFeedback(text,ok=null){
+  const f=document.getElementById('feedback');f.textContent=text;f.className='feedback '+(ok===true?'good':ok===false?'bad':'');
+}
+function addProcessError(msg){
+  if(!current)return;
+  current.processErrors=(current.processErrors||0)+1;
+  current.processNotes=current.processNotes||[];
+  current.processNotes.push(msg);
+  updateHUD();
+}
+function startGame(){
+  round=0;score=0;streak=0;current=null;locked=false;
+  sessionRecords=[];incorrectQueue=[];correctionQueue=[];
+  retryMode=null;retryQueue=[];retryIndex=0;
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+  loadQuestion();
+}
+function updateHUD(){
+  document.getElementById('scoreBox').textContent=score;
+  document.getElementById('streakBox').textContent=streak;
+  document.getElementById('correctionBox').textContent=sessionRecords.reduce((a,r)=>a+(r.processErrors||0),0)+(current?.processErrors||0);
+  document.getElementById('roundNum').textContent=retryMode?`↺${retryIndex}`:Math.min(round+1,totalRounds);
+  const map=document.getElementById('stairMap');map.innerHTML='';
+  for(let i=0;i<totalRounds;i++){
+    const d=document.createElement('div');d.className='step';d.dataset.room=roomNames[i];
+    const opened=i<round&&!retryMode;
+    const active=i===round&&!retryMode;
+    d.textContent=opened?'🔓':'🔒';
+    if(opened)d.classList.add('open');
+    if(active)d.classList.add('current');
+    map.appendChild(d);
+  }
+}
+function loadQuestion(){
+  if(retryMode)return loadRetryQuestion();
+  if(round>=totalRounds)return endGame();
+  locked=false;factorState=null;breakState=null;strategyState=null;matchState=null;scaleManipState=null;
+  setFeedback('');
+  document.getElementById('hintBody').classList.remove('active');
+  current=buildQuestion(skillOrder[round]);
+  showCurrentQuestion();
+  updateHUD();
+}
+function showCurrentQuestion(){
+  document.getElementById('skillChip').textContent=(retryMode?'Retry · ':'')+current.skillLabel;
+  document.getElementById('questionText').textContent=current.question;
+  document.getElementById('visual').innerHTML=current.visual||'';
+  document.getElementById('hintBody').innerHTML=current.hint||'';
+  document.getElementById('options').innerHTML='';
+  const input=document.getElementById('answerInput'),row=document.getElementById('submitRow'),btn=document.getElementById('submitAnswerBtn');
+  input.value='';input.disabled=false;input.style.display='';row.style.display='none';btn.style.display='';
+  if(current.needsFinalInput){
+    if(current.kind==='breakApart')row.style.display='none';
+    else row.style.display='flex';
+    input.placeholder=current.placeholder||'Type your final answer';
+  }
+  if(current.kind==='factFamily')renderOptions(current.options);
+  if(current.kind==='scaling'&&scaleManipState&&scaleManipState.baseSolved)renderOptions(current.options);
+}
+function renderOptions(opts){
+  const box=document.getElementById('options');box.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');b.className='option-btn';b.textContent=o;
+    b.onclick=()=>handleOption(o);box.appendChild(b);
+  });
+}
+function buildQuestion(key,data=null){
+  if(key==='factFamily')return qFactFamily(data);
+  if(key==='factorPairs')return qFactorPairs(data);
+  if(key==='scaling')return qScaling(data);
+  if(key==='breakApart')return qBreakApart(data);
+  if(key==='strategy')return qStrategy(data);
+  return qFinalMatch(data);
+}
+function questionSnapshot(){
+  return {key:current.key,data:JSON.parse(JSON.stringify(current.data))};
+}
+function completeQuestion({finalCorrect=true,response='completed',answer=current.answer,details='' }={}){
+  if(locked)return;locked=true;
+  current.finalAttempts=current.finalAttempts||1;
+  const rec={
+    key:current.key,skill:current.skillLabel,question:current.question,response,answer,
+    finalCorrect,attempts:current.finalAttempts||1,processErrors:current.processErrors||0,
+    processNotes:current.processNotes||[],details,snapshot:questionSnapshot()
+  };
+  sessionRecords.push(rec);historyLog.push(rec);historyLog=historyLog.slice(-120);
+  localStorage.setItem('unit3ProductHistory',JSON.stringify(historyLog));
+  if(finalCorrect){
+    streak++;score+=10+Math.min(streak-1,4)*2;
+    if(rec.processErrors>0)correctionQueue.push(rec.snapshot);
+    setFeedback(rec.processErrors?`✓ Solved with ${rec.processErrors} correction${rec.processErrors===1?'':'s'}.`:`✨ Correct! +${10+Math.min(streak-1,4)*2} House Points`,true);
+  }else{
+    streak=0;score=Math.max(0,score-2);incorrectQueue.push(rec.snapshot);
+    setFeedback(`🌀 Not this time. Correct answer: ${answer}. You can retry this question at the end.`,false);
+  }
+  renderHistory();updateHUD();
+  setTimeout(()=>{
+    locked=false;
+    if(retryMode){retryIndex++;loadRetryQuestion()}
+    else{round++;loadQuestion()}
+  },finalCorrect?1200:1900);
+}
+function submitFinalAnswer(){
+  if(locked||!current||!current.needsFinalInput)return;
+  const raw=document.getElementById('answerInput').value.trim();
+  if(raw===''){setFeedback('Enter an answer first.',false);return}
+  current.finalAttempts=(current.finalAttempts||0)+1;
+  const ok=norm(raw)===norm(current.answer);
+  completeQuestion({finalCorrect:ok,response:raw,answer:current.answer});
+}
+
+/* 1. Fact family */
+function qFactFamily(data){
+  data=data||(()=>{
+    const facts=[[6,7],[8,7],[9,6],[4,8],[5,8],[9,8],[7,4],[6,6]];
+    const [a,b]=choose(facts),p=a*b,askBy=Math.random()<.5?a:b;
+    return{a,b,p,askBy};
+  })();
+  const ans=data.p/data.askBy;
+  return{
+    key:'factFamily',data,kind:'factFamily',skillLabel:'Fact-Family Gate',
+    question:`Use the fact family to solve ${data.p} ÷ ${data.askBy}.`,
+    answer:String(ans),options:shuffle([ans,ans+1,Math.max(1,ans-1),data.askBy]).map(String),
+    processErrors:0,finalAttempts:0,
+    visual:`<div class="fact-card"><div class="big-equation">${data.a} × ${data.b} = ${data.p}</div></div>`,
+    hint:hintSteps([`Think backward from multiplication.`,`Ask: ${data.askBy} × ? = ${data.p}.`])
+  };
+}
+function handleOption(o){
+  if(!current||locked)return;
+  if(current.kind==='factFamily'){
+    if(norm(o)===norm(current.answer))completeQuestion({finalCorrect:true,response:o});
+    else{addProcessError(`Chose ${o} before ${current.answer}`);setFeedback(`Not that one. Which number times ${current.data.askBy} makes ${current.data.p}?`,false)}
+  }else if(current.kind==='scaling'){
+    handleScalingOption(o);
+  }
+}
+
+/* 2. Factor pairs */
+function factorPairsOf(n){
+  const out=[];for(let i=1;i<=Math.sqrt(n);i++)if(n%i===0)out.push([i,n/i]);return out;
+}
+function qFactorPairs(data){
+  data=data||{target:choose([28,42,48,55,63])};
+  const pairs=factorPairsOf(data.target);
+  const factors=[...new Set(pairs.flat())];
+  let extras=[];while(extras.length<4){const x=randInt(2,18);if(!factors.includes(x)&&!extras.includes(x))extras.push(x)}
+  factorState={pairs,found:[],selected:[],candidates:shuffle([...factors,...extras])};
+  const q={
+    key:'factorPairs',data,kind:'factorPairs',skillLabel:'Factor & Multiple Chamber',
+    question:`Find every factor pair of ${data.target}. Hit two Quaffles at a time.`,
+    answer:pairs.map(p=>p.join(' × ')).join(', '),processErrors:0,finalAttempts:1
+  };
+  q.visual=renderFactorChamber(data.target);
+  q.hint=hintSteps([`A factor pair multiplies exactly to ${data.target}.`,`Try 1 × ${data.target}, then test 2, 3, 4...`,`A number with more than two factors is composite.`]);
+  return q;
+}
+function renderFactorChamber(target){
+  const foundKeys=new Set(factorState.found.map(p=>p.slice().sort((a,b)=>a-b).join('x')));
+  const stones=factorState.candidates.map(v=>{
+    const sel=factorState.selected.includes(v)?'selected':'';
+    return `<button class="factor-stone ${sel}" onclick="tapFactor(event,${v})" aria-label="Quaffle ${v}">${v}</button>`;
+  }).join('');
+  const rack=factorState.found.map(p=>`<div class="pair-chip">${p[0]} × ${p[1]} = ${target}</div>`).join('');
+  return `<div class="factor-card"><div class="big-equation">Quaffle Target: ${target}</div><div class="history-meta">Hit two numbered Quaffles whose product opens the factor lock.</div><div class="factor-stones">${stones}</div>
+    <div class="pair-rack">${rack||'<span class="history-meta">No pairs found yet.</span>'}</div>
+    <div class="history-meta">${factorState.found.length}/${factorState.pairs.length} factor pairs found</div></div>`;
+}
+function quaffleBurst(evt,strong=false){
+  if(!evt)return;
+  if(navigator.vibrate)navigator.vibrate(strong?[18,24,18]:10);
+  const x=evt.clientX,y=evt.clientY;
+  const ripple=document.createElement('div');ripple.className='quaffle-ripple'+(strong?' goal':'');ripple.style.left=x+'px';ripple.style.top=y+'px';document.body.appendChild(ripple);ripple.addEventListener('animationend',()=>ripple.remove(),{once:true});
+  const count=strong?9:5;
+  for(let i=0;i<count;i++){
+    const s=document.createElement('div');s.className='quaffle-spark';s.textContent=i%3===0?'✦':'✧';s.style.left=x+'px';s.style.top=y+'px';
+    const a=Math.PI*2*i/count+Math.random()*.3,dist=strong?30+Math.random()*32:16+Math.random()*20;
+    s.style.setProperty('--dx',Math.cos(a)*dist+'px');s.style.setProperty('--dy',Math.sin(a)*dist+'px');document.body.appendChild(s);s.addEventListener('animationend',()=>s.remove(),{once:true});
+  }
+}
+function tapFactor(evt,v){
+  if(!current||current.kind!=='factorPairs'||locked)return;
+  quaffleBurst(evt,false);if(evt&&evt.currentTarget){evt.currentTarget.classList.remove('quaffle-hit');void evt.currentTarget.offsetWidth;evt.currentTarget.classList.add('quaffle-hit');}
+  if(factorState.selected.includes(v)){factorState.selected=[]}
+  else{factorState.selected.push(v)}
+  if(factorState.selected.length===2){
+    const [a,b]=factorState.selected;factorState.selected=[];
+    const key=[a,b].sort((x,y)=>x-y).join('x');
+    const valid=factorState.pairs.some(p=>[...p].sort((x,y)=>x-y).join('x')===key);
+    const already=factorState.found.some(p=>[...p].sort((x,y)=>x-y).join('x')===key);
+    if(valid&&!already){
+      factorState.found.push([a,b]);quaffleBurst(evt,true);setFeedback(`✓ ${a} × ${b} = ${current.data.target} — Quaffles through the hoops!`,true);
+      if(factorState.found.length===factorState.pairs.length){
+        document.getElementById('visual').innerHTML=renderFactorChamber(current.data.target);
+        setTimeout(()=>completeQuestion({finalCorrect:true,response:`Found ${factorState.found.length} factor pairs`,details:'Composite number'}),500);return;
+      }
+    }else{
+      addProcessError(`${a} × ${b} is not a new factor pair`);
+      setFeedback(already?'You already found that pair. Keep looking.':`${a} × ${b} does not make ${current.data.target}. Try another pair.`,false);
+    }
+  }
+  document.getElementById('visual').innerHTML=renderFactorChamber(current.data.target);
+}
+
+/* 3. Scaling */
+function qScaling(data){
+  data=data||(()=>{
+    const a=choose([3,4,6,7,8,9]),b=choose([2,3,4,5,6,7]),scale=choose([10,100,1000]);
+    return{a,b,scale};
+  })();
+  const base=data.a*data.b,targetFactor=data.b*data.scale,ans=base*data.scale;
+  const options=shuffle([ans,base*10,base*100,base*1000].filter((x,i,a)=>a.indexOf(x)===i)).map(fmt);
+  scaleManipState={base,scale:data.scale,answer:ans,baseSolved:false,selected:false,built:false};
+  return{
+    key:'scaling',data,kind:'scaling',skillLabel:'Place-Value Enlargement Spell',
+    question:`Use the basic fact, then scale it: ${data.a} × ${data.b} → ${data.a} × ${fmt(targetFactor)}.`,
+    answer:fmt(ans),options,processErrors:0,finalAttempts:0,
+    visual:renderScalingStage(data),
+    hint:hintSteps([
+      `First solve ${data.a} × ${data.b}.`,
+      `Then ${data.b} becomes ${data.b} ${data.scale===10?'tens':data.scale===100?'hundreds':'thousands'}.`,
+      `The product scales by the same factor.`
+    ])
+  };
+}
+function renderScalingStage(data){
+  const base=data.a*data.b,targetFactor=data.b*data.scale,ans=base*data.scale;
+  if(!scaleManipState||!scaleManipState.baseSolved){
+    return `<div class="spell-card">
+      <div class="scale-row">
+        <div class="scale-box">${data.a} × ${data.b} =
+          <input id="scaleBaseInput" class="scale-base-input" inputmode="numeric"
+            onkeydown="if(event.key==='Enter')checkScaleBaseFact()" aria-label="basic fact answer">
+          <button class="scale-base-check" onclick="checkScaleBaseFact()">Check</button>
+        </div>
+        <div class="scale-arrow">→ ×${fmt(data.scale)} →</div>
+        <div class="scale-box">${data.a} × ${fmt(targetFactor)} = ?</div>
+      </div>
+      <div class="history-meta">Solve the basic fact first. Then use its place value to scale the product.</div>
+    </div>`;
+  }
+  return `<div class="spell-card">
+    <div class="scale-row">
+      <div class="scale-box">${data.a} × ${data.b} = ${fmt(base)}</div>
+      <div class="scale-arrow">→ ×${fmt(data.scale)} →</div>
+      <div class="scale-box">${data.a} × ${fmt(targetFactor)} = ?</div>
+    </div>
+    <div class="history-meta">${fmt(targetFactor)} means ${data.b} ${data.scale===10?'tens':data.scale===100?'hundreds':'thousands'}.</div>
+    ${renderScaleManipulator(base,data.scale,ans)}
+  </div>`;
+}
+function checkScaleBaseFact(){
+  if(!current||current.kind!=='scaling'||!scaleManipState||scaleManipState.baseSolved)return;
+  const input=document.getElementById('scaleBaseInput');
+  const raw=input?input.value.trim():'';
+  if(raw===''){setFeedback('Type the basic fact first.',false);return}
+  if(Number(raw)===scaleManipState.base){
+    scaleManipState.baseSolved=true;
+    document.getElementById('visual').innerHTML=renderScalingStage(current.data);
+    renderOptions(current.options);
+    setFeedback(`✓ Correct. Now scale ${fmt(scaleManipState.base)} by ×${fmt(scaleManipState.scale)}.`,true);
+  }else{
+    addProcessError(`Basic fact answered ${raw} instead of ${scaleManipState.base}`);
+    setFeedback(`Not quite. Recheck ${current.data.a} × ${current.data.b}.`,false);
+    if(input){input.select();input.focus();}
+  }
+}
+
+function renderScaleManipulator(base,scale,ans){
+  const suffix=fmt(scale).slice(1);
+  return `<div class="scale-play"><div class="scale-play-title">Optional: drag (or tap) <strong>${fmt(base)}</strong> onto the <strong>1</strong> in ${fmt(scale)}. Watch what happens to the place value.</div>
+    <div class="scale-manip"><div id="scaleChip" class="scale-chip ${scaleManipState&&scaleManipState.selected?'selected':''}" draggable="true" ondragstart="scaleDragStart(event)" onclick="scaleChipTap()">${fmt(base)}</div>
+    <div class="scale-arrow">→</div><div id="scaleDrop" class="scale-zero-target ${scaleManipState&&scaleManipState.built?'scale-built':''}" ondragover="event.preventDefault()" ondrop="scaleDrop(event)" onclick="scaleTargetTap()">${scaleManipState&&scaleManipState.built?fmt(ans):`<span class="leading-one">1</span>${suffix}`}</div></div></div>`;
+}
+function scaleDragStart(e){if(!scaleManipState)return;e.dataTransfer.setData('text/plain',String(scaleManipState.base));}
+function scaleChipTap(){if(!scaleManipState||scaleManipState.built)return;scaleManipState.selected=!scaleManipState.selected;const c=document.getElementById('scaleChip');if(c)c.classList.toggle('selected',scaleManipState.selected)}
+function scaleTargetTap(){if(scaleManipState&&scaleManipState.selected&&!scaleManipState.built)finishScaleBuild()}
+function scaleDrop(e){e.preventDefault();if(scaleManipState&&!scaleManipState.built)finishScaleBuild()}
+function finishScaleBuild(){
+  scaleManipState.built=true;scaleManipState.selected=false;
+  const z=document.getElementById('scaleDrop');if(z){z.classList.add('scale-built');z.textContent=fmt(scaleManipState.answer)}
+  const c=document.getElementById('scaleChip');if(c)c.classList.remove('selected');
+  setFeedback(`You replaced the 1 in ${fmt(scaleManipState.scale)} with ${fmt(scaleManipState.base)} to build ${fmt(scaleManipState.answer)}.`,true);
+}
+
+function handleScalingOption(o){
+  if(norm(o)===norm(current.answer))completeQuestion({finalCorrect:true,response:o});
+  else{addProcessError(`Chose ${o} before ${current.answer}`);setFeedback('The basic fact is right — now scale its place value by the same amount.',false)}
+}
+
+/* 4. Break apart multiplication */
+function makeBreakData(){
+  const multiplier=choose([2,3,4,5]);
+  const n=choose([28,34,46,63,72,243,312,421]);
+  return{multiplier,n};
+}
+function decompose(n){
+  const s=String(n),parts=[];for(let i=0;i<s.length;i++){const d=Number(s[i]),place=10**(s.length-1-i);if(d)parts.push(d*place)}return parts;
+}
+function qBreakApart(data){
+  data=data||makeBreakData();
+  const parts=decompose(data.n);
+  breakState={opened:false,parts,solved:Array(parts.length).fill(false),active:null};
+  const q={
+    key:'breakApart',data,kind:'breakApart',skillLabel:'Break-Apart Multiplication',
+    question:`Break ${fmt(data.n)} apart, multiply each place-value piece by ${data.multiplier}, then combine the partial products.`,
+    answer:fmt(data.n*data.multiplier),processErrors:0,finalAttempts:0,needsFinalInput:true,placeholder:'Enter the combined product'
+  };
+  q.visual=renderBreakApart(data);
+  q.hint=hintSteps([`Break ${fmt(data.n)} into ${parts.map(fmt).join(' + ')}.`,`Multiply each part by ${data.multiplier}.`,`Add the partial products to get the whole product.`]);
+  return q;
+}
+function renderBreakApart(data=null){
+  const d=data||(current?.data||{});if(!breakState)return'';
+  const shards=breakState.opened?breakState.parts.map((p,i)=>`<button class="shard fall" style="animation-delay:${i*80}ms" onclick="activateShard(${i})">${fmt(p)} ${breakState.solved[i]?'✓':''}</button>`).join(''):'';
+  let active='';
+  if(breakState.active!==null&&!breakState.solved[breakState.active]){
+    const p=breakState.parts[breakState.active],ans=p*d.multiplier;
+    const opts=shuffle([ans,ans+d.multiplier*10,Math.max(0,ans-d.multiplier*10),p+d.multiplier]);
+    active=`<div class="partial-row"><div class="partial-label">${fmt(p)} × ${d.multiplier} =</div><div class="partial-choices">${opts.map(v=>`<button onclick="answerPartial(${v})">${fmt(v)}</button>`).join('')}</div></div>`;
+  }
+  const solvedProducts=breakState.parts.map((p,i)=>breakState.solved[i]?fmt(p*d.multiplier):'□').join(' + ');
+  return `<div class="break-card"><div><button class="crystal" onclick="openCrystal()" ${breakState.opened?'disabled':''}>${fmt(d.n)}</button> × <strong>${d.multiplier}</strong></div>
+    <div class="shards">${shards}</div>${active}
+    <div class="partial-products-summary">Partial products: ${solvedProducts}</div></div>`;
+}
+function openCrystal(){
+  if(!current||current.kind!=='breakApart'||breakState.opened)return;
+  breakState.opened=true;document.getElementById('visual').innerHTML=renderBreakApart();setFeedback('The number shattered into place-value pieces. Tap a shard.',true);
+}
+function activateShard(i){
+  if(breakState.solved[i])return;breakState.active=i;document.getElementById('visual').innerHTML=renderBreakApart()
+}
+function answerPartial(v){
+  const i=breakState.active,p=breakState.parts[i],correct=p*current.data.multiplier;
+  if(v===correct){
+    breakState.solved[i]=true;breakState.active=null;setFeedback(`✓ ${fmt(p)} × ${current.data.multiplier} = ${fmt(correct)}`,true);
+    if(breakState.solved.every(Boolean)){
+      setFeedback('All partial products are ready. Add them and submit the final product.',true);
+      document.getElementById('submitRow').style.display='flex';
+      document.getElementById('answerInput').focus();
+    }
+  }else{addProcessError(`Partial product ${fmt(p)} × ${current.data.multiplier} answered ${fmt(v)}`);setFeedback('Not quite. Multiply the digit first, then keep its place value.',false)}
+  document.getElementById('visual').innerHTML=renderBreakApart();
+}
+
+/* 5. Estimation strategy only */
+function qStrategy(data){
+  data=data||choose([
+    {a:29,b:81,roundA:30,roundB:80},
+    {a:28,b:25,roundA:30,roundB:30},
+    {a:39,b:48,roundA:40,roundB:50},
+    {a:61,b:42,roundA:60,roundB:40}
+  ]);
+  const estimate=data.roundA*data.roundB;
+  return{
+    key:'strategy',data,kind:'strategyEstimate',skillLabel:'Estimation Vault',
+    question:`Estimate ${data.a} × ${data.b}.`,
+    answer:fmt(estimate),processErrors:0,finalAttempts:0,
+    visual:renderEstimateOnly(data),
+    hint:hintSteps([`Round ${data.a} to ${data.roundA}.`,`Round ${data.b} to ${data.roundB}.`,`Then solve the rounded multiplication: ${data.roundA} × ${data.roundB}.`])
+  };
+}
+function renderEstimateOnly(d){
+  const correct=`${d.roundA} × ${d.roundB}`;
+  const opts=shuffle([correct,`${d.a} × ${d.roundB}`,`${d.roundA} × ${d.b}`,`${Math.max(10,d.roundA-10)} × ${d.roundB}`]);
+  return `<div class="strategy-card"><div class="big-equation">${d.a} × ${d.b}</div><div class="history-meta">Choose the best tens estimate.</div><div class="options">${opts.map(o=>`<button class="option-btn" onclick="chooseEstimateOnly('${o}')">${o}</button>`).join('')}</div></div>`;
+}
+function chooseEstimateOnly(o){
+  if(!current||current.kind!=='strategyEstimate'||locked)return;
+  const d=current.data,correct=`${d.roundA} × ${d.roundB}`,estimate=d.roundA*d.roundB;
+  if(o===correct){
+    current.answer=fmt(estimate);
+    current.needsFinalInput=true;
+    document.getElementById('visual').innerHTML=`<div class="strategy-card">
+      <div class="pair-chip">✓ ${correct} is the correct rounded expression.</div>
+      <div class="big-equation" style="margin-top:18px">${correct} = ?</div>
+      <div class="history-meta">Now solve the estimate.</div>
+    </div>`;
+    const row=document.getElementById('submitRow');
+    const input=document.getElementById('answerInput');
+    row.style.display='flex';
+    input.value='';
+    input.disabled=false;
+    input.placeholder=`Solve ${correct}`;
+    input.focus();
+    setFeedback(`Good. Now calculate ${correct}.`,true);
+  }else{
+    addProcessError(`Estimate choice ${o}`);
+    setFeedback('Round both factors to nearby tens first. Try another estimate.',false);
+  }
+}
+
+/* 6. Final match */
+function qFinalMatch(data){
+  data=data||{
+    pairs:[
+      {prompt:'60 × 40',answer:'2,400'},
+      {prompt:'Estimate 29 × 81',answer:'30 × 80'},
+      {prompt:'24 × 3',answer:'72'}
+    ],
+    distractor:'82'
+  };
+  const rightChoices=shuffle([...data.pairs.map(p=>p.answer),data.distractor]);
+  matchState={
+    pairs:JSON.parse(JSON.stringify(data.pairs)),
+    right:rightChoices,
+    selected:null,
+    matched:{},
+    attempts:Array(data.pairs.length).fill(0),
+    message:'Choose a scroll on the left, then its matching solution on the right.'
+  };
+  const q={
+    key:'finalMatch',data,kind:'finalMatch',skillLabel:'Room of Requirement — Final Match',
+    question:'Match each multiplication scroll to its partner. One extra solution is a distractor. Your attempt count is shown on every scroll.',
+    answer:'All three matched',processErrors:0,finalAttempts:1
+  };
+  q.visual=renderFinalMatch();
+  q.hint=hintSteps([
+    `Use place-value scaling for 60 × 40.`,
+    `For Estimate 29 × 81, round each factor to a nearby ten.`,
+    `For 24 × 3, break 24 into 20 + 4: 20 × 3 + 4 × 3 = 60 + 12.`
+  ]);
+  return q;
+}
+function renderFinalMatch(){
+  const left=matchState.pairs.map((p,i)=>{
+    const used=matchState.matched[i]!==undefined,sel=matchState.selected===i;
+    const tries=matchState.attempts[i];
+    return `<button class="match-card ${sel?'selected':''} ${used?'matched':''}" onclick="selectMatchLeft(${i})">${p.prompt}
+      <span class="match-attempt">${used?`✓ Matched in ${tries} attempt${tries===1?'':'s'}`:`Attempts: ${tries}`}</span></button>`;
+  }).join('');
+  const right=matchState.right.map((a,j)=>{
+    const used=Object.values(matchState.matched).includes(j);
+    return `<button id="matchRight${j}" class="match-card right ${used?'matched':''}" onclick="selectMatchRight(${j},event)">${a}</button>`;
+  }).join('');
+  return `<div class="match-shell"><div class="match-board"><div class="match-column">${left}</div><div class="match-column">${right}</div></div>
+    <div class="match-status">${matchState.message}</div></div>`;
+}
+function selectMatchLeft(i){
+  if(locked||matchState.matched[i]!==undefined)return;
+  matchState.selected=i;
+  matchState.message='Now choose its matching solution.';
+  document.getElementById('visual').innerHTML=renderFinalMatch();
+}
+function matchBurst(el,correct){
+  if(!el)return;
+  el.classList.remove('match-pop','match-shock');
+  void el.offsetWidth;
+  el.classList.add(correct?'match-pop':'match-shock');
+
+  const r=el.getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  const count=correct?9:6;
+  for(let i=0;i<count;i++){
+    const s=document.createElement('span');
+    s.className=correct?'match-star':'match-bolt';
+    s.textContent=correct?(i%2?'✦':'★'):'⚡';
+    s.style.left=cx+'px';s.style.top=cy+'px';
+    const angle=(Math.PI*2*i/count)+(Math.random()*.35);
+    const dist=correct?(42+Math.random()*46):(26+Math.random()*28);
+    s.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    s.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    document.body.appendChild(s);
+    s.addEventListener('animationend',()=>s.remove(),{once:true});
+  }
+  if(navigator.vibrate){
+    navigator.vibrate(correct?[22]:[22,35,22]);
+  }
+}
+function selectMatchRight(j,e){
+  if(locked||matchState.selected===null)return;
+  const i=matchState.selected,p=matchState.pairs[i];
+  matchState.attempts[i]++;
+  const el=document.getElementById(`matchRight${j}`);
+  if(norm(matchState.right[j])===norm(p.answer)){
+    matchBurst(el,true);
+    matchState.matched[i]=j;
+    matchState.selected=null;
+    matchState.message=`✓ Correct. ${Object.keys(matchState.matched).length}/3 matched.`;
+    if(Object.keys(matchState.matched).length===matchState.pairs.length){
+      const details=matchState.pairs.map((p,k)=>`${p.prompt} → ${p.answer}: ${matchState.attempts[k]} attempt${matchState.attempts[k]===1?'':'s'}`).join(' · ');
+      setTimeout(()=>{
+        document.getElementById('visual').innerHTML=renderFinalMatch();
+        setTimeout(()=>completeQuestion({finalCorrect:true,response:'3/3 matched',details}),450);
+      },260);
+      return;
+    }
+    setTimeout(()=>{document.getElementById('visual').innerHTML=renderFinalMatch()},260);
+  }else{
+    matchBurst(el,false);
+    addProcessError(`Match ${p.prompt}: chose ${matchState.right[j]}`);
+    matchState.selected=null;
+    matchState.message='⚡ Not a match. The vault buzzes — choose another scroll and try again.';
+    setTimeout(()=>{document.getElementById('visual').innerHTML=renderFinalMatch()},360);
+  }
+}
+
+/* Reporting & retry */
+function renderHistory(){
+  const list=historyLog.slice().reverse().slice(0,30);
+  const html=list.length?list.map(r=>{
+    const final=r.finalCorrect?`<span class="good">✓</span>`:`<span class="bad">✗</span>`;
+    const attemptText=`${r.attempts||1} final attempt${(r.attempts||1)===1?'':'s'}`;
+    const correctionText=r.processErrors?` · ${r.processErrors} earlier correction${r.processErrors===1?'':'s'}`:'';
+    const answerLine=r.finalCorrect
+      ? `Final: ${r.response} ${final} · ${attemptText}${correctionText}`
+      : `Final: ${r.response} ${final} · correct ${r.answer} · ${attemptText}${correctionText}`;
+    return `<div class="history-line"><strong>${r.skill}</strong>: ${r.question}<br>${answerLine}${r.details?`<div class="history-meta">${r.details}</div>`:''}</div>`;
+  }).join(''):'<div class="history-meta">No quests yet.</div>';
+  for(const id of ['homeHistoryLines','historyLines','endHistoryLines']){const el=document.getElementById(id);if(el)el.innerHTML=html}
+}
+function endGame(){
+  document.getElementById('gameScreen').classList.add('hidden');document.getElementById('endScreen').classList.remove('hidden');
+  const correct=sessionRecords.filter(r=>r.finalCorrect).length;
+  document.getElementById('endSummary').textContent=`${correct} of ${sessionRecords.length} final answers were correct. You earned ${score} House Points.`;
+  const corrected=sessionRecords.filter(r=>r.finalCorrect&&r.processErrors>0).length;
+  document.getElementById('endMessage').textContent=incorrectQueue.length
+    ? 'Some final answers were incorrect. You can return to the game to retry only those questions.'
+    : corrected
+      ? 'Every final answer was correct. You can still practice the questions that needed an earlier correction.'
+      : 'Perfect run — every ward was solved without a correction.';
+  const b1=document.getElementById('retryIncorrectBtn'),b2=document.getElementById('practiceCorrectionsBtn');
+  b1.style.display=incorrectQueue.length?'inline-block':'none';b1.textContent=`↺ Return to Game — Retry ${incorrectQueue.length} Incorrect Question${incorrectQueue.length===1?'':'s'}`;
+  b2.style.display=correctionQueue.length?'inline-block':'none';b2.textContent=`Practice ${correctionQueue.length} Question${correctionQueue.length===1?'':'s'} With Corrections`;
+  document.getElementById('endReport').innerHTML=sessionRecords.map(r=>{
+    const status=r.finalCorrect?'✓ Final correct':'✗ Final incorrect';
+    return `<div class="report-card"><strong>${r.skill}</strong><br>${r.question}<br>${status} · ${r.attempts||1} final attempt${(r.attempts||1)===1?'':'s'}${r.processErrors?` · ${r.processErrors} earlier correction${r.processErrors===1?'':'s'}`:''}${r.details?`<div class="history-meta">${r.details}</div>`:''}</div>`;
+  }).join('');
+  renderHistory();
+}
+function startRetry(type){
+  retryMode=type;retryQueue=(type==='incorrect'?incorrectQueue:correctionQueue).map(x=>JSON.parse(JSON.stringify(x)));retryIndex=0;
+  if(type==='incorrect')incorrectQueue=[];else correctionQueue=[];
+  document.getElementById('endScreen').classList.add('hidden');document.getElementById('gameScreen').classList.remove('hidden');
+  loadRetryQuestion();
+}
+function loadRetryQuestion(){
+  if(retryIndex>=retryQueue.length){retryMode=null;return endGame()}
+  locked=false;factorState=null;breakState=null;strategyState=null;matchState=null;scaleManipState=null;setFeedback('');
+  const snap=retryQueue[retryIndex];current=buildQuestion(snap.key,snap.data);showCurrentQuestion();updateHUD();
+}
+historyLog=JSON.parse(localStorage.getItem('unit3ProductHistory')||'[]');renderHistory();
+</script>
+</body>
+</html>
