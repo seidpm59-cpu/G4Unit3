@@ -330,9 +330,8 @@ function showCurrentQuestion(){
   const input=document.getElementById('answerInput'),row=document.getElementById('submitRow'),btn=document.getElementById('submitAnswerBtn');
   input.value='';input.disabled=false;input.style.display='';row.style.display='none';btn.style.display='';
   if(current.needsFinalInput){
-    if(current.kind==='breakApart')row.style.display='none';
-    else row.style.display='flex';
-    input.placeholder=current.placeholder||'Type your final answer';
+    row.style.display='flex';
+    input.placeholder=current.placeholder||'Type your answer if you know it';
   }
   if(current.kind==='factFamily')renderOptions(current.options);
   if(current.kind==='scaling'&&scaleManipState&&scaleManipState.baseSolved)renderOptions(current.options);
@@ -401,7 +400,7 @@ function qFactFamily(data){
     key:'factFamily',data,kind:'factFamily',skillLabel:'Fact-Family Gate',
     question:`Use the fact family to solve ${data.p} ÷ ${data.askBy}.`,
     answer:String(ans),options:shuffle([ans,ans+1,Math.max(1,ans-1),data.askBy]).map(String),
-    processErrors:0,finalAttempts:0,
+    processErrors:0,finalAttempts:0,needsFinalInput:true,placeholder:'Type the quotient if you know it',
     visual:`<div class="fact-card"><div class="big-equation">${data.a} × ${data.b} = ${data.p}</div></div>`,
     hint:hintSteps([`Think backward from multiplication.`,`Ask: ${data.askBy} × ? = ${data.p}.`])
   };
@@ -493,8 +492,9 @@ function qScaling(data){
   scaleManipState={base,scale:data.scale,answer:ans,baseSolved:false,selected:false,built:false};
   return{
     key:'scaling',data,kind:'scaling',skillLabel:'Place-Value Enlargement Spell',
-    question:`Use the basic fact, then scale it: ${data.a} × ${data.b} → ${data.a} × ${fmt(targetFactor)}.`,
+    question:`What is ${data.a} × ${fmt(targetFactor)}?`,
     answer:fmt(ans),options,processErrors:0,finalAttempts:0,
+    needsFinalInput:true,placeholder:`Type ${data.a} × ${fmt(targetFactor)} if you know it`,
     visual:renderScalingStage(data),
     hint:hintSteps([
       `First solve ${data.a} × ${data.b}.`,
@@ -507,7 +507,9 @@ function renderScalingStage(data){
   const base=data.a*data.b,targetFactor=data.b*data.scale,ans=base*data.scale;
   if(!scaleManipState||!scaleManipState.baseSolved){
     return `<div class="spell-card">
-      <div class="scale-row">
+      <div class="big-equation">${data.a} × ${fmt(targetFactor)} = ?</div>
+      <div class="history-meta" style="font-size:18px;margin-top:14px;margin-bottom:8px"><strong>Strategy (optional):</strong> solve the basic fact first, then scale the product by ×${fmt(data.scale)}.</div>
+      <div class="scale-row" style="margin-top:8px">
         <div class="scale-box">${data.a} × ${data.b} =
           <input id="scaleBaseInput" class="scale-base-input" inputmode="numeric"
             onkeydown="if(event.key==='Enter')checkScaleBaseFact()" aria-label="basic fact answer">
@@ -516,11 +518,12 @@ function renderScalingStage(data){
         <div class="scale-arrow">→ ×${fmt(data.scale)} →</div>
         <div class="scale-box">${data.a} × ${fmt(targetFactor)} = ?</div>
       </div>
-      <div class="history-meta">Solve the basic fact first. Then use its place value to scale the product.</div>
     </div>`;
   }
   return `<div class="spell-card">
-    <div class="scale-row">
+    <div class="big-equation">${data.a} × ${fmt(targetFactor)} = ?</div>
+    <div class="history-meta" style="font-size:18px;margin-top:14px;margin-bottom:8px"><strong>Strategy (optional):</strong> ${data.a} × ${data.b} = ${fmt(base)}, then scale ${fmt(base)} by ×${fmt(data.scale)}.</div>
+    <div class="scale-row" style="margin-top:8px">
       <div class="scale-box">${data.a} × ${data.b} = ${fmt(base)}</div>
       <div class="scale-arrow">→ ×${fmt(data.scale)} →</div>
       <div class="scale-box">${data.a} × ${fmt(targetFactor)} = ?</div>
@@ -583,8 +586,8 @@ function qBreakApart(data){
   breakState={opened:false,parts,solved:Array(parts.length).fill(false),active:null};
   const q={
     key:'breakApart',data,kind:'breakApart',skillLabel:'Break-Apart Multiplication',
-    question:`Break ${fmt(data.n)} apart, multiply each place-value piece by ${data.multiplier}, then combine the partial products.`,
-    answer:fmt(data.n*data.multiplier),processErrors:0,finalAttempts:0,needsFinalInput:true,placeholder:'Enter the combined product'
+    question:`What is ${fmt(data.n)} × ${data.multiplier}?`,
+    answer:fmt(data.n*data.multiplier),processErrors:0,finalAttempts:0,needsFinalInput:true,placeholder:'Type the product if you know it'
   };
   q.visual=renderBreakApart(data);
   q.hint=hintSteps([`Break ${fmt(data.n)} into ${parts.map(fmt).join(' + ')}.`,`Multiply each part by ${data.multiplier}.`,`Add the partial products to get the whole product.`]);
@@ -600,9 +603,15 @@ function renderBreakApart(data=null){
     active=`<div class="partial-row"><div class="partial-label">${fmt(p)} × ${d.multiplier} =</div><div class="partial-choices">${opts.map(v=>`<button onclick="answerPartial(${v})">${fmt(v)}</button>`).join('')}</div></div>`;
   }
   const solvedProducts=breakState.parts.map((p,i)=>breakState.solved[i]?fmt(p*d.multiplier):'□').join(' + ');
-  return `<div class="break-card"><div><button class="crystal" onclick="openCrystal()" ${breakState.opened?'disabled':''}>${fmt(d.n)}</button> × <strong>${d.multiplier}</strong></div>
+  return `<div class="break-card">
+    <div class="big-equation">${fmt(d.n)} × ${d.multiplier} = ?</div>
+    <div class="history-meta" style="font-size:18px;margin:12px 0 14px">
+      <strong>Strategy (optional):</strong> break ${fmt(d.n)} into place-value parts, multiply each part by ${d.multiplier}, then add the partial products.
+    </div>
+    <div><button class="crystal" onclick="openCrystal()" ${breakState.opened?'disabled':''}>${fmt(d.n)}</button></div>
     <div class="shards">${shards}</div>${active}
-    <div class="partial-products-summary">Partial products: ${solvedProducts}</div></div>`;
+    <div class="partial-products-summary">Partial products: ${solvedProducts}</div>
+  </div>`;
 }
 function openCrystal(){
   if(!current||current.kind!=='breakApart'||breakState.opened)return;
@@ -617,7 +626,6 @@ function answerPartial(v){
     breakState.solved[i]=true;breakState.active=null;setFeedback(`✓ ${fmt(p)} × ${current.data.multiplier} = ${fmt(correct)}`,true);
     if(breakState.solved.every(Boolean)){
       setFeedback('All partial products are ready. Add them and submit the final product.',true);
-      document.getElementById('submitRow').style.display='flex';
       document.getElementById('answerInput').focus();
     }
   }else{addProcessError(`Partial product ${fmt(p)} × ${current.data.multiplier} answered ${fmt(v)}`);setFeedback('Not quite. Multiply the digit first, then keep its place value.',false)}
@@ -637,6 +645,7 @@ function qStrategy(data){
     key:'strategy',data,kind:'strategyEstimate',skillLabel:'Estimation Vault',
     question:`Estimate ${data.a} × ${data.b}.`,
     answer:fmt(estimate),processErrors:0,finalAttempts:0,
+    needsFinalInput:true,placeholder:'Type the estimated product if you know it',
     visual:renderEstimateOnly(data),
     hint:hintSteps([`Round ${data.a} to ${data.roundA}.`,`Round ${data.b} to ${data.roundB}.`,`Then solve the rounded multiplication: ${data.roundA} × ${data.roundB}.`])
   };
@@ -657,9 +666,7 @@ function chooseEstimateOnly(o){
       <div class="big-equation" style="margin-top:18px">${correct} = ?</div>
       <div class="history-meta">Now solve the estimate.</div>
     </div>`;
-    const row=document.getElementById('submitRow');
     const input=document.getElementById('answerInput');
-    row.style.display='flex';
     input.value='';
     input.disabled=false;
     input.placeholder=`Solve ${correct}`;
