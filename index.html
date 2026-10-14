@@ -687,7 +687,7 @@ function renderBreakApart(data=null){
   if(breakState.active!==null&&!breakState.solved[breakState.active]){
     const p=breakState.parts[breakState.active],ans=p*d.multiplier;
     const opts=shuffle([ans,ans+d.multiplier*10,Math.max(0,ans-d.multiplier*10),p+d.multiplier]);
-    active=`<div class="partial-row"><div class="partial-label">${fmt(p)} × ${d.multiplier} =</div><div class="partial-choices">${opts.map(v=>`<button onclick="answerPartial(${v})">${fmt(v)}</button>`).join('')}</div></div>`;
+    active=`<div class="partial-row"><div class="partial-label">${d.multiplier} × ${fmt(p)} =</div><div class="partial-choices">${opts.map(v=>`<button onclick="answerPartial(${v})">${fmt(v)}</button>`).join('')}</div></div>`;
   }
   const solvedProducts=breakState.parts.map((p,i)=>breakState.solved[i]?fmt(p*d.multiplier):'□').join(' + ');
   return `<div class="break-card">
@@ -710,12 +710,12 @@ function activateShard(i){
 function answerPartial(v){
   const i=breakState.active,p=breakState.parts[i],correct=p*current.data.multiplier;
   if(v===correct){
-    breakState.solved[i]=true;breakState.active=null;setFeedback(`✓ ${fmt(p)} × ${current.data.multiplier} = ${fmt(correct)}`,true);
+    breakState.solved[i]=true;breakState.active=null;setFeedback(`✓ ${current.data.multiplier} × ${fmt(p)} = ${fmt(correct)}`,true);
     if(breakState.solved.every(Boolean)){
       setFeedback('All partial products are ready. Add them and submit the final product.',true);
       document.getElementById('answerInput').focus();
     }
-  }else{addProcessError(`Partial product ${fmt(p)} × ${current.data.multiplier} answered ${fmt(v)}`);setFeedback('Not quite. Multiply the digit first, then keep its place value.',false)}
+  }else{addProcessError(`Partial product ${current.data.multiplier} × ${fmt(p)} answered ${fmt(v)}`);setFeedback('Not quite. Multiply the digit first, then keep its place value.',false)}
   document.getElementById('visual').innerHTML=renderBreakApart();
 }
 
@@ -785,12 +785,12 @@ function qFinalMatch(data){
       {prompt:'70 × 30',answer:'2,100'}
     ];
     const estimateItems=[
-      {prompt:'Estimate 29 × 81',answer:'30 × 80'},
-      {prompt:'Estimate 41 × 68',answer:'40 × 70'},
-      {prompt:'Estimate 72 × 31',answer:'70 × 30'},
-      {prompt:'Estimate 58 × 44',answer:'60 × 40'},
-      {prompt:'Estimate 83 × 22',answer:'80 × 20'},
-      {prompt:'Estimate 67 × 53',answer:'70 × 50'}
+      {prompt:'The estimate for 29 × 81 is',answer:'30 × 80 = 2,400'},
+      {prompt:'The estimate for 41 × 68 is',answer:'40 × 70 = 2,800'},
+      {prompt:'The estimate for 72 × 31 is',answer:'70 × 30 = 2,100'},
+      {prompt:'The estimate for 58 × 44 is',answer:'60 × 40 = 2,400'},
+      {prompt:'The estimate for 83 × 22 is',answer:'80 × 20 = 1,600'},
+      {prompt:'The estimate for 67 × 53 is',answer:'70 × 50 = 3,500'}
     ];
     const breakItems=[
       {prompt:'24 × 3',answer:'72'},
