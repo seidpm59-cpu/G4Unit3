@@ -463,13 +463,30 @@ function handleOption(o){
 function factorPairsOf(n){
   const out=[];for(let i=1;i<=Math.sqrt(n);i++)if(n%i===0)out.push([i,n/i]);return out;
 }
+function nextFactorTarget(){
+  const targets=[18,20,24,28,30,32,35,40,42,45,48,50,54,55,56,60,63,66,70,72,75,77,78,80,84,88,90,96,98,99];
+  let deck=[];
+  try{deck=JSON.parse(localStorage.getItem('unit3FactorTargetDeck')||'[]')}catch(e){deck=[]}
+  let last=null;
+  try{last=Number(localStorage.getItem('unit3LastFactorTarget'))||null}catch(e){last=null}
+  deck=deck.filter(x=>targets.includes(x));
+  if(!deck.length){
+    deck=shuffle(targets.slice());
+    if(last!==null&&deck.length>1&&deck[0]===last){
+      const swapIndex=deck.findIndex(x=>x!==last);
+      [deck[0],deck[swapIndex]]=[deck[swapIndex],deck[0]];
+    }
+  }
+  const target=deck.shift();
+  try{
+    localStorage.setItem('unit3FactorTargetDeck',JSON.stringify(deck));
+    localStorage.setItem('unit3LastFactorTarget',String(target));
+  }catch(e){}
+  return target;
+}
+
 function qFactorPairs(data){
-  data=data||{target:chooseFresh(
-    'factorPairs',
-    [18,20,24,28,30,32,35,40,42,45,48,50,54,55,56,60,63,66,70,72,75,77,78,80,84,88,90,96,98,99],
-    x=>String(x),
-    12
-  )};
+  data=data||{target:nextFactorTarget()};
   const pairs=factorPairsOf(data.target);
   const factors=[...new Set(pairs.flat())];
   let extras=[];while(extras.length<4){const x=randInt(2,18);if(!factors.includes(x)&&!extras.includes(x))extras.push(x)}
