@@ -490,14 +490,23 @@ function qFactorPairs(data){
   const pairs=factorPairsOf(data.target);
   const factors=[...new Set(pairs.flat())];
   let extras=[];while(extras.length<4){const x=randInt(2,18);if(!factors.includes(x)&&!extras.includes(x))extras.push(x)}
-  factorState={pairs,found:[],selected:[],candidates:shuffle([...factors,...extras])};
+  const requiredPairs=Math.min(3,pairs.length);
+  factorState={pairs,requiredPairs,found:[],selected:[],candidates:shuffle([...factors,...extras])};
   const q={
     key:'factorPairs',data,kind:'factorPairs',skillLabel:'Factor & Multiple Chamber',
-    question:`Find every factor pair of ${data.target}. Hit two Quaffles at a time.`,
+    question:requiredPairs<pairs.length
+      ? `Find any ${requiredPairs} factor pairs of ${data.target}. Hit two Quaffles at a time.`
+      : `Find every factor pair of ${data.target}. Hit two Quaffles at a time.`,
     answer:pairs.map(p=>p.join(' × ')).join(', '),processErrors:0,finalAttempts:1
   };
   q.visual=renderFactorChamber(data.target);
-  q.hint=hintSteps([`A factor pair multiplies exactly to ${data.target}.`,`Try 1 × ${data.target}, then test 2, 3, 4...`,`A number with more than two factors is composite.`]);
+  q.hint=hintSteps([
+    `A factor pair multiplies exactly to ${data.target}.`,
+    factorState.requiredPairs<factorState.pairs.length
+      ? `You only need ${factorState.requiredPairs} different valid factor pairs to open this lock.`
+      : `Find all ${factorState.requiredPairs} factor pair${factorState.requiredPairs===1?'':'s'} to open this lock.`,
+    `Try 1 × ${data.target}, then test 2, 3, 4...`
+  ]);
   return q;
 }
 function renderFactorChamber(target){
@@ -509,7 +518,7 @@ function renderFactorChamber(target){
   const rack=factorState.found.map(p=>`<div class="pair-chip">${p[0]} × ${p[1]} = ${target}</div>`).join('');
   return `<div class="factor-card"><div class="big-equation">Quaffle Target: ${target}</div><div class="history-meta">Hit two numbered Quaffles whose product opens the factor lock.</div><div class="factor-stones">${stones}</div>
     <div class="pair-rack">${rack||'<span class="history-meta">No pairs found yet.</span>'}</div>
-    <div class="history-meta">${factorState.found.length}/${factorState.pairs.length} factor pairs found</div></div>`;
+    <div class="history-meta">${factorState.found.length}/${factorState.requiredPairs} factor pairs required</div></div>`;
 }
 function quaffleBurst(evt,strong=false){
   if(!evt)return;
@@ -535,9 +544,15 @@ function tapFactor(evt,v){
     const already=factorState.found.some(p=>[...p].sort((x,y)=>x-y).join('x')===key);
     if(valid&&!already){
       factorState.found.push([a,b]);quaffleBurst(evt,true);setFeedback(`✓ ${a} × ${b} = ${current.data.target} — Quaffles through the hoops!`,true);
-      if(factorState.found.length===factorState.pairs.length){
+      if(factorState.found.length>=factorState.requiredPairs){
         document.getElementById('visual').innerHTML=renderFactorChamber(current.data.target);
-        setTimeout(()=>completeQuestion({finalCorrect:true,response:`Found ${factorState.found.length} factor pairs`,details:'Composite number'}),500);return;
+        setTimeout(()=>completeQuestion({
+          finalCorrect:true,
+          response:`Found ${factorState.found.length} factor pairs`,
+          details:factorState.requiredPairs<factorState.pairs.length
+            ? `Found ${factorState.requiredPairs} valid factor pairs; more pairs also exist.`
+            : 'Composite number'
+        }),500);return;
       }
     }else{
       addProcessError(`${a} × ${b} is not a new factor pair`);
